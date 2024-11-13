@@ -23,10 +23,6 @@ python manage.py fill_db [ratio]
  - тэгов - ratio;
  - оценок пользователей - ratio * 200;
 
-### 6. Баллы
-
-#### Максимальные баллы за ДЗ - 16 баллов
-
 Проектирование модели - 5:
 ```python
 from django.db import models
@@ -109,7 +105,7 @@ class AnswerLike(models.Model):
         return f'{self.user} likes {self.answer}'
 
 ```
-- [X] query-set для типовых выборок: новые вопросы, популярные, по тегу - 2.
+- [X] query-set выборок - 2.
 ```python
 class QuestionManager(models.Manager):
     def best(self):
@@ -120,7 +116,7 @@ class QuestionManager(models.Manager):
 ```
 Наполнение базы тестовыми данными - 3:
 
-- [X] скрипт для наполнения данными - 1;
+- [X] Cкрипт для наполнения данными - 1;
   
   [Файл](../../management/commands/fill_db.py)
 - [X] использование django management commands - 1;
