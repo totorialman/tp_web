@@ -88,65 +88,69 @@ urlpatterns = [
     </div>
   ```
 
-  catalog_card.html
+  quesion.html
   ```html
-    <div class="card-body">
-      <h5 class="card-title"><a href={%url 'question' data.question.id%}>{{data.question.title}}</a></h5>
-      <p class="card-text">{{data.question.text}}</p>
-    </div>
-    <div class="card-footer">
-       <div class="row">
-          <div class="col-md-3">
-             <a href={% url 'question' data.question.id %} class="btn btn-outline-primary">
-               Ответов <span class="badge text-bg-primary">{{data.answers_amount}}</span>
-             </a>
-          </div>
-          <div class="col-md-9">
-             {% for tag in data.question.tags%}
-             <span class="badge rounded-pill text-bg-primary"><a href={% url 'tag' tag %} class="tag">{{tag}}</a></span>
-             {% endfor %}
-          </div>
-       </div>
-    </div>
+  <div class="card mb-3">
+    <div class="card-body d-flex">
+      <div class="text-center me-4">
+        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mr-2">
+        <p>{{ question.vote_count }}</p>  
+      </div>
+    <div>
+    <h5><a href="{% url 'question_detail' question.id %}">{{ question.title }}</a></h5>
+    <p>{{ question.content|truncatewords:20 }}</p>
+    <a href="{% url 'question_detail' question.id %}" class="mr-5">answer ({{ question.answer_count }})</a>  
+    <p class="d-inline ms-2">Tags: 
+    {% for tag in question.tags.all %}
+    <a href=/tag/{{tag.name}}/>{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+    </p>
+  </div>
+  </div>
+  </div>
   ```
 
 
 Постраничное отображение - 4:
 ---
 
-- [X] функция пагинации - 1;
-```python
-def paginate(objects_list, request, per_page=10):
-    p = Paginator(objects_list, 10)
-    try:
-        number = int(request.GET.get("page", 1))
-        if number > p.num_pages + 1 or number < 1:
-            raise Exception()
-        current_page = p.get_page(number)
-    except:
-        number = 1
-        current_page = p.get_page(number)
-    result = {
-            "has_previous": False,
-            "has_next": False,
-    }
-    result["page"] = current_page
-    result["current_page"] = current_page.number
-    if current_page.has_previous() == True:
-        result["has_previous"] = True
-        result["previous_page"] = current_page.previous_page_number()
-    if current_page.has_next() == True:
-        result["has_next"] = True
-        result["next_page"] = current_page.next_page_number()
-    return result
+- [X] Пагинация - 1;
+```html
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+  {% if questions.has_previous %}
+  <li class="page-item">
+  <a class="page-link" href="?page=1">&laquo; First</a>
+  </li>
+    <li class="page-item">
+    <a class="page-link" href="?page={{ questions.previous_page_number }}">Previous</a>
+  </li>
+  {% endif %}
+    
+  {% for num in questions.paginator.page_range %}
+  {% if questions.number == num %}
+  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+  {% elif num > questions.number|add:'-3' and num < questions.number|add:'3' %}
+  <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+  {% endif %}
+  {% endfor %}
+    
+  {% if questions.has_next %}
+  <li class="page-item">
+  <a class="page-link" href="?page={{ questions.next_page_number }}">Next</a>
+  </li>
+  <li class="page-item">
+  <a class="page-link" href="?page={{ questions.paginator.num_pages }}">Last &raquo;</a>
+  </li>
+  {% endif %}
+  </ul>
+  </nav>
 ```
 - [X] шаблон для отрисовки пагинатора - 2;
-  
-  [Файл](./ask_larin/templates/paginator.html)
 
 - [X] корректная обработка “неправильных” параметров - 1.
   
-  ![Значение не число](./img/lab2_1.png)
+  ![Значение не число](1_11.png)
 
-  ![Значение < 0](./img/lab2_2.png)
+  ![Значение < 0](1_12.png)
 

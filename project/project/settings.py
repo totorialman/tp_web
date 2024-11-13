@@ -78,14 +78,12 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
      'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tp_web_2', # Имя вашей БД. Если вы создали черезе psql или IDE свою базу и хотите использовать его - пропишите его имя здесь
+        'NAME': 'tp_web_2', 
         'USER': 'admin',
         'PASSWORD': 'admin',
         'HOST': '91.184.243.246',
-        'PORT': 7474, # Стандартный порт PostgreSQL
-        
-    }
-    
+        'PORT': 7474, 
+    }  
 }
 
 

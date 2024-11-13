@@ -17,13 +17,12 @@ class Tag(models.Model):
     def __str__(self):
         return self.name
 
-# Model Manager для выборки "лучших" и "новых" вопросов
 class QuestionManager(models.Manager):
     def best(self):
-        return self.filter(vote_count__gt=10).order_by('-vote_count')  # Выборка лучших вопросов
+        return self.filter(vote_count__gt=10).order_by('-vote_count')  
 
     def new(self):
-        return self.order_by('-created_at')  # Выборка новых вопросов
+        return self.order_by('-created_at')  
 
 # Модель для вопросов
 class Question(models.Model):
@@ -36,14 +35,13 @@ class Question(models.Model):
     vote_count = models.IntegerField(default=0)
     answer_count = models.IntegerField(default=0)
 
-    # Подключаем ModelManager
     objects = QuestionManager()
 
     def __str__(self):
         return self.title
 
     def get_absolute_url(self):
-        return f"/questions/{self.id}/"  # Генерация URL для вопроса
+        return f"/questions/{self.id}/"  
 
 # Модель для ответов
 class Answer(models.Model):
@@ -63,7 +61,7 @@ class QuestionLike(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('user', 'question')  # Ограничение уникальности
+        unique_together = ('user', 'question')  
 
     def __str__(self):
         return f'{self.user} likes {self.question}'
@@ -74,7 +72,7 @@ class AnswerLike(models.Model):
     answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('user', 'answer')  # Ограничение уникальности
+        unique_together = ('user', 'answer')  
 
     def __str__(self):
         return f'{self.user} likes {self.answer}'

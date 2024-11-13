@@ -6,7 +6,7 @@
 {% block content %}
     <div class="d-flex mb-2">
         <h3 class="mr-3">New Questions</h3>
-        <a href="top-likes/">Hot Questions</a>
+        <a href="/top-likes/">Hot Questions</a>
     </div>
 
     {% for question in questions %}
@@ -14,15 +14,15 @@
             <div class="card-body d-flex">
                 <div class="text-center me-4">
                     <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mr-2">
-                    <p>{{ question.vote_count }}</p>  <!-- vote_count заменить на реальное поле -->
+                    <p>{{ question.vote_count }}</p>  
                 </div>
                 <div>
                     <h5><a href="{% url 'question_detail' question.id %}">{{ question.title }}</a></h5>
                     <p>{{ question.content|truncatewords:20 }}</p>
-                    <a href="#" class="mr-5">answer ({{ question.answer_count }})</a>  <!-- answer_count заменить на реальное поле -->
+                    <a href="{% url 'question_detail' question.id %}" class="mr-5">answer ({{ question.answer_count }})</a>  
                     <p class="d-inline ms-2">Tags: 
                         {% for tag in question.tags.all %}
-                            <a href="#">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                            <a href=/tag/{{tag.name}}/>{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </p>
                 </div>
