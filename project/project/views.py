@@ -1,10 +1,8 @@
-from django.shortcuts import render
-from django.views.generic import ListView
-from .models import Question, Answer, Tag, User
+from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404
 from django.db.models import Count
 from django.core.cache import cache
+from .models import Question, Answer, Tag, User
 
 def get_popular_tags_and_best_users():
     popular_tags = cache.get('popular_tags')
@@ -20,7 +18,7 @@ def get_popular_tags_and_best_users():
     return popular_tags, best_users
 
 def question_detail(request, question_id):
-    question = get_object_or_404(Question, id=question_id)
+    question = get_object_or_404(Question.objects.annotate(num_answers=Count('answers')), id=question_id)
     answers = Answer.objects.filter(question=question)
 
     popular_tags, best_users = get_popular_tags_and_best_users()
@@ -33,11 +31,11 @@ def question_detail(request, question_id):
     })
 
 def question_list_view(request):
-    questions = Question.objects.all()  
-    paginator = Paginator(questions, 20)  
+    questions = Question.objects.annotate(num_answers=Count('answers')).order_by('-id')
+    paginator = Paginator(questions, 20)
 
-    page_number = request.GET.get('page')  
-    page_obj = paginator.get_page(page_number)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     popular_tags, best_users = get_popular_tags_and_best_users()
 
@@ -50,8 +48,7 @@ def question_list_view(request):
     return render(request, 'questions.html', context)
 
 def top_liked_questions(request):
-    top_questions = Question.objects.all().order_by('-vote_count')[:5]
-
+    top_questions = Question.objects.annotate(num_answers=Count('answers')).order_by('-vote_count')[:5]
     paginator = Paginator(top_questions, 20)
 
     page_number = request.GET.get('page')
