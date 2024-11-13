@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AskPupkin - Question{% endblock %}
+
+{% block content %}
+<div class="container mt-5 ">
+    <div class="bg-white rounded">
+        <div class="d-flex align-items-start">
+            <div class="d-flex flex-column">
+                <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="70" class="mr-4">
+                <div class="vote-count ml-2">{{ question.vote_count }}</div> <!-- Отображаем количество голосов -->
+            </div>
+            <div>
+                <h3>{{ question.title }}</h3> <!-- Название вопроса -->
+                <p>{{ question.content }}</p> <!-- Содержимое вопроса -->
+                <p><strong>Tags:</strong>
+                    {% for tag in question.tags.all %}
+                        <a href="#">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Отображение ответов -->
+    <div class="answer-container">
+        {% for answer in answers %}
+            <div class="border p-3 bg-white rounded mb-3">
+                <div class="d-flex align-items-start">
+                    <div class="d-flex flex-column">
+                        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mr-4">
+                        <div class="vote-count ml-2">{{ answer.vote_count }}</div> <!-- Отображаем количество голосов -->
+                    </div>
+                    <div>
+                        <p>{{ answer.content }}</p> <!-- Содержимое ответа -->
+                        <div class="d-flex align-items-center">
+                            <div><input type="checkbox" class="mr-1" {% if answer.is_correct %}checked{% endif %}> Correct!</div> <!-- Статус ответа -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No answers yet.</p>
+        {% endfor %}
+
+        <!-- Форма для добавления нового ответа -->
+        <div class="bg-white rounded">
+            <div class="form-group">
+                <textarea class="form-control" rows="3" placeholder="Enter your answer here..."></textarea>
+            </div>
+            <button class="btn btn-dark">Answer</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

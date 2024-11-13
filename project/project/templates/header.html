@@ -1,0 +1,30 @@
+{% load static %}
+
+<div class="row align-items-center mb-2">
+    <div class="col-md-3 d-flex justify-content-start">
+        <h1><a class="logo" href="/">AskPupkin</a></h1>
+    </div>
+
+    <div class="col-md-5">
+        <form class="d-flex">
+            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+            <a href="/new-ask/">
+                <button class="btn btn-success ml-3" type="button">ASK!</button>
+            </a>
+        </form>
+    </div>
+
+    <div class="col-md-4 d-flex justify-content-end align-items-center">
+        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="40" class="mr-4">
+
+        <div class="d-flex flex-column">
+            <span class="ml-4">Dr. Pepper</span>
+            <div class="d-flex align-items-center">
+                <a href="/setting/">Settings</a>
+                <a href="#" class="ml-3">Log Out</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr class="my-2 border border-muted border-2">

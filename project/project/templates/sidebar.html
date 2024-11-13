@@ -1,0 +1,17 @@
+<div class="mb-4">
+    <h5>Popular Tags</h5>
+    <p class="custom-links">
+        {% for tag in popular_tags %}
+            <a href="{% url 'tag_detail' tag.name %}" class="badge bg-secondary">{{ tag.name }}</a> 
+        {% endfor %}
+    </p>
+</div>
+
+<div>
+    <h5>Best Members</h5>
+    <ul class="list-unstyled">
+        {% for user in best_users %}
+            <li>{{ user.username }}</li>
+        {% endfor %}
+    </ul>
+</div>

@@ -1,0 +1,46 @@
+.custom-links a{
+    color: #fff; /* Устанавливает кастомный цвет для всех ссылок */
+    text-decoration: none; /* Убирает подчеркивание (по желанию) */
+}
+.logo{
+    text-decoration: none;
+    color:#000;
+}
+.logo:hover{
+    text-decoration: none;
+    color:#000;
+}
+
+.w-200 {
+    width: 200%;
+}
+
+body {
+    font-family: sans-serif;
+}
+
+.form-group label {
+    font-weight: bold;
+}
+
+.btn-ask:hover {
+    background-color: #333;
+    color:#fff;
+}
+
+.vote-count {
+    font-size: 1.2em;
+    margin: 5px 0;
+}
+.answer-container {
+    border-top: 1px solid #ccc;
+    padding-top: 15px;
+    margin-top: 15px;
+}
+
+.btn-save {
+    background-color: black;
+    color: white;
+    font-weight: bold;
+    border: none;
+}
