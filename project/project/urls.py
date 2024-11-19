@@ -29,5 +29,6 @@ urlpatterns = [
     path('singup/', views.singup, name='singup'),
     path('setting/', views.setting, name='setting'),
     path('base/', views.base, name='base'),
+    path('admin/', admin.site.urls),
 
 ]

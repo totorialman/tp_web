@@ -12,8 +12,8 @@ def get_popular_tags_and_best_users():
         popular_tags = Tag.objects.annotate(question_count=Count('questions')).order_by('-question_count')[:10]
         best_users = User.objects.annotate(question_count=Count('questions')).order_by('-question_count')[:5]
 
-        cache.set('popular_tags', popular_tags, timeout=300)
-        cache.set('best_users', best_users, timeout=300)
+        cache.set('popular_tags', popular_tags, timeout=3000)
+        cache.set('best_users', best_users, timeout=3000)
 
     return popular_tags, best_users
 
