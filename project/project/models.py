@@ -42,21 +42,21 @@ class Answer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     vote_count = models.IntegerField(default=0)
+    is_correct = models.BooleanField(default=False)
 
 # Модель для лайков вопросов
 class QuestionLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    question = models.ForeignKey('Question', on_delete=models.CASCADE)
+    value = models.IntegerField(default=0)  # +1 для лайков, -1 для дизлайков
 
     class Meta:
         unique_together = ('user', 'question')  
 
-
-# Модель для лайков ответов
 class AnswerLike(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
+    answer = models.ForeignKey('Answer', on_delete=models.CASCADE)
+    value = models.IntegerField(default=0)  # +1 для лайков, -1 для дизлайков
 
     class Meta:
-        unique_together = ('user', 'answer')  
-
+        unique_together = ('user', 'answer')

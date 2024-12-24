@@ -8,22 +8,33 @@
     <div class="col-md-5">
         <form class="d-flex">
             <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-            <a href="/new-ask/">
+            <a href="/ask/">
                 <button class="btn btn-success ml-3" type="button">ASK!</button>
             </a>
         </form>
     </div>
 
     <div class="col-md-4 d-flex justify-content-end align-items-center">
-        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="40" class="mr-4">
-
-        <div class="d-flex flex-column">
-            <span class="ml-4">Dr. Pepper</span>
-            <div class="d-flex align-items-center">
-                <a href="/setting/">Settings</a>
-                <a href="#" class="ml-3">Log Out</a>
+        {% if user.is_authenticated %}
+            <!-- Если пользователь авторизован -->
+            {% if user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}" alt="Avatar" width="100" class="mb-2">
+            {% else %}
+                <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="100" class="mb-2">
+            {% endif %}
+            
+            <div class="d-flex flex-column">
+                <span class="ml-4">{{ user.username }}</span>
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'edit_profile' %}">Profile</a>
+                    <a href="{% url 'logout' %}" class="ml-3">Log Out</a>
+                </div>
             </div>
-        </div>
+        {% else %}
+            <!-- Если пользователь не авторизован -->
+            <a href="{% url 'login' %}" class="btn btn-primary ml-3">Log In</a>
+            <a href="{% url 'signup' %}" class="btn btn-success ml-3">Sign Up</a>
+        {% endif %}
     </div>
 </div>
 

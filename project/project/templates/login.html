@@ -5,31 +5,55 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h3>log In</h3>
-    <p class="my-3" style="color:red;">Sorry, wrong password!</p>
-    <form>
+    <h3>Log In</h3>
+    
+    <!-- Сообщения об ошибках -->
+    {% if form.errors %}
+        <p class="my-3" style="color:red;">Sorry, wrong login or password!</p>
+    {% endif %}
+    
+    <form method="POST">
+        {% csrf_token %}
+        
+        <!-- Поле для логина -->
         <div class="form-group row">
-            <label for="login" class="col-sm-2 col-form-label">Login</label>
+            <label for="username" class="col-sm-2 col-form-label">Login</label>
             <div class="col-sm-10">
-                <input type="text" class="form-control" id="login" value="dr_pepper">
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="text-danger">
+                        {% for error in form.username.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         </div>
-        
+
+        <!-- Поле для пароля -->
         <div class="form-group row">
             <label for="password" class="col-sm-2 col-form-label">Password</label>
             <div class="col-sm-10">
-                <input type="password" class="form-control" id="password" value="">
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="text-danger">
+                        {% for error in form.password.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
             </div>
         </div>
-        
+
+        <!-- Кнопка отправки формы -->
         <div class="form-group row">
             <div class="col-sm-10 offset-sm-2">
                 <button type="submit" class="btn btn-save">Log In!</button>
             </div>
         </div>
-        <a href="#" class="offset-sm-2">create new account</a>
-
     </form>
+
+    <!-- Ссылка на регистрацию нового пользователя -->
+    <a href="{% url 'signup' %}" class="offset-sm-2">Create new account</a>
 </div>
-        
 {% endblock %}

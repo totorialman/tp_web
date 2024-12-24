@@ -1,28 +1,35 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}AskPupkin - New Questions{% endblock %}
-
 {% block content %}
-    <div class="d-flex mb-2">
-        <h3 class="mr-3">New Questions</h3>
-        <a href="/top-likes/">Hot Questions</a>
-    </div>
-
+<div class="container mt-5">
+    <h3>All Questions</h3>
     {% for question in questions %}
         <div class="card mb-3">
             <div class="card-body d-flex">
-                <div class="text-center me-4">
-                    <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mr-2">
-                    <p>{{ question.vote_count }}</p>  
+                <!-- Отображение аватара автора вопроса -->
+                <div class="d-flex flex-column align-items-center" style="margin-right: 20px;"> <!-- Увеличен отступ справа вручную -->
+                    {% if question.author.profile.avatar %}
+                        <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" width="80" class="mb-2">
+                    {% else %}
+                        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="70" class="mb-2">
+                    {% endif %}
+                    <!-- Кнопки для голосования и оценки в одной строке -->
+                    <div class="d-flex justify-content-center">
+                    <button class="btn btn-sm btn-outline-primary vote-btn" data-type="question" data-id="{{ question.id }}" data-upvote="true">👍</button>
+                    <div class="vote-count mx-2" id="vote-count-{{ question.id }}">{{ question.vote_count }}</div> <!-- Оценка между кнопками -->
+                    <button class="btn btn-sm btn-outline-danger vote-btn" data-type="question" data-id="{{ question.id }}" data-upvote="false">👎</button>
                 </div>
-                <div>
+                </div>
+
+                <!-- Контент вопроса -->
+                <div class="flex-grow-1">
                     <h5><a href="{% url 'question_detail' question.id %}">{{ question.title }}</a></h5>
                     <p>{{ question.content|truncatewords:20 }}</p>
-                    <a href="{% url 'question_detail' question.id %}" class="mr-5">answer ({{ question.answer_count }})</a>  
-                    <p class="d-inline ms-2">Tags: 
+                    <p><strong>Asked by:</strong> {{ question.author.username }}</p>
+                    <p><strong>Tags:</strong>
                         {% for tag in question.tags.all %}
-                            <a href=/tag/{{tag.name}}/>{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
+                            <a href="#">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </p>
                 </div>
@@ -31,35 +38,41 @@
     {% empty %}
         <p>No questions available.</p>
     {% endfor %}
+</div>
 
-    <nav aria-label="Page navigation">
-        <ul class="pagination">
-            {% if questions.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1">&laquo; First</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ questions.previous_page_number }}">Previous</a>
-                </li>
-            {% endif %}
-    
-            {% for num in questions.paginator.page_range %}
-                {% if questions.number == num %}
-                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num > questions.number|add:'-3' and num < questions.number|add:'3' %}
-                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                {% endif %}
-            {% endfor %}
-    
-            {% if questions.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ questions.next_page_number }}">Next</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ questions.paginator.num_pages }}">Last &raquo;</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-    
+{% block scripts %}
+<script>
+    // Добавление обработчика для кнопок голосования
+    document.querySelectorAll('.vote-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const isUpvote = this.getAttribute('data-upvote') === 'true';
+            const modelId = this.getAttribute('data-id');
+            const modelType = this.getAttribute('data-type');
+
+            // Отправка AJAX-запроса на сервер для обновления голоса
+            fetch(`/toggle-vote/${modelType}/${modelId}/?is_upvote=${isUpvote}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.vote_count !== undefined) {
+                    // Обновляем отображение голосов
+                    const voteCountElement = this.closest('.d-flex').querySelector('.vote-count');
+                    voteCountElement.textContent = data.vote_count;
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        });
+    });
+</script>
+{% endblock %}
+
 {% endblock %}

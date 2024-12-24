@@ -1,19 +1,30 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}AskPupkin - Question{% endblock %}
-
 {% block content %}
-<div class="container mt-5 ">
+<div class="container mt-5">
     <div class="bg-white rounded">
         <div class="d-flex align-items-start">
-            <div class="d-flex flex-column">
-                <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="70" class="mr-4">
-                <div class="vote-count ml-2">{{ question.vote_count }}</div> <!-- Отображаем количество голосов -->
+            <!-- Аватар и кнопки лайк/дизлайк -->
+            <div class="d-flex flex-column align-items-center me-4" style="margin-right: 20px;">
+                {% if question.author.profile.avatar %}
+                    <img src="{{ question.author.profile.avatar.url }}" alt="Avatar" width="70" class="mb-2">
+                {% else %}
+                    <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="70" class="mb-2">
+                {% endif %}
+                
+                <!-- Кнопки лайка и дизлайка -->
+                <div class="d-flex justify-content-center">
+                    <button class="btn btn-sm btn-outline-primary vote-btn" data-type="question" data-id="{{ question.id }}" data-upvote="true">👍</button>
+                    <div class="vote-count mx-2" id="vote-count-{{ question.id }}">{{ question.vote_count }}</div>
+                    <button class="btn btn-sm btn-outline-danger vote-btn" data-type="question" data-id="{{ question.id }}" data-upvote="false">👎</button>
+                </div>
             </div>
+
+            <!-- Контент вопроса -->
             <div>
-                <h3>{{ question.title }}</h3> <!-- Название вопроса -->
-                <p>{{ question.content }}</p> <!-- Содержимое вопроса -->
+                <h3>{{ question.title }}</h3>
+                <p>{{ question.content }}</p>
                 <p><strong>Tags:</strong>
                     {% for tag in question.tags.all %}
                         <a href="#">{{ tag.name }}</a>{% if not forloop.last %}, {% endif %}
@@ -21,34 +32,125 @@
                 </p>
             </div>
         </div>
+        <p class="mt-2"><strong>Asked by:</strong> {{ question.author.username }}</p>
     </div>
 
-    <div class="answer-container">
+    <div class="answer-container mt-4">
         {% for answer in answers %}
-            <div class="border p-3 bg-white rounded mb-3">
+            <div class="border p-3 rounded mb-3" id="answer-{{ answer.id }}" style="{% if answer.is_correct %} background-color: lightgreen; {% endif %}">
                 <div class="d-flex align-items-start">
-                    <div class="d-flex flex-column">
-                        <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mr-4">
-                        <div class="vote-count ml-2">{{ answer.vote_count }}</div> <!-- Отображаем количество голосов -->
-                    </div>
-                    <div>
-                        <p>{{ answer.content }}</p> <!-- Содержимое ответа -->
-                        <div class="d-flex align-items-center">
-                            <div><input type="checkbox" class="mr-1" {% if answer.is_correct %}checked{% endif %}> Correct!</div> <!-- Статус ответа -->
+                    <!-- Аватар и кнопки лайк/дизлайк для ответа -->
+                    <div class="d-flex flex-column align-items-center me-4" style="margin-right: 20px;">
+                        {% if answer.author.profile.avatar %}
+                            <img src="{{ answer.author.profile.avatar.url }}" alt="Avatar" width="50" class="mb-2">
+                        {% else %}
+                            <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="50" class="mb-2">
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-center">
+                            <button class="btn btn-sm btn-outline-primary vote-btn" data-type="answer" data-id="{{ answer.id }}" data-upvote="true">👍</button>
+                            <div class="vote-count mx-2" id="vote-count-{{ answer.id }}">{{ answer.vote_count }}</div>
+                            <button class="btn btn-sm btn-outline-danger vote-btn" data-type="answer" data-id="{{ answer.id }}" data-upvote="false">👎</button>
                         </div>
                     </div>
+
+                    <!-- Контент ответа -->
+                    <div>
+                        <p>{{ answer.content }}</p>
+                        <!-- Галочка для выбора правильного ответа -->
+                        {% if question.author == request.user %}
+                            <input type="checkbox" class="correct-answer-checkbox" data-answer-id="{{ answer.id }}" {% if answer.is_correct %} checked {% endif %}>
+                            <label for="correct-answer-checkbox">Correct Answer</label>
+                        {% endif %}
+                    </div>
                 </div>
+                <p class="mt-2"><strong>Answered by:</strong> {{ answer.author.username }}</p>
             </div>
         {% empty %}
             <p>No answers yet.</p>
         {% endfor %}
-
-        <div class="bg-white rounded">
-            <div class="form-group">
-                <textarea class="form-control" rows="3" placeholder="Enter your answer here..."></textarea>
-            </div>
-            <button class="btn btn-dark">Answer</button>
+        <div class="bg-white rounded mt-4">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.content }}
+                </div>
+                <button type="submit" class="btn btn-dark">Answer</button>
+            </form>
         </div>
     </div>
 </div>
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('.vote-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const isUpvote = this.getAttribute('data-upvote') === 'true';
+            const modelId = this.getAttribute('data-id');
+            const modelType = this.getAttribute('data-type');
+
+            fetch(`/toggle-vote/${modelType}/${modelId}/?is_upvote=${isUpvote}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.vote_count !== undefined) {
+                    const voteCountElement = this.closest('.d-flex').querySelector('.vote-count');
+                    voteCountElement.textContent = data.vote_count;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+
+    // Обработчик для галочек правильных ответов
+    document.querySelectorAll('.correct-answer-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const answerId = this.getAttribute('data-answer-id');
+            const isChecked = this.checked;
+            const questionId = {{ question.id }};
+
+            // Отправляем запрос на сервер для обновления правильного ответа
+            fetch(`/set-correct-answer/${questionId}/${answerId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_correct: isChecked })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_correct !== undefined) {
+                    // Изменение фона у правильного ответа
+                    const answerDiv = document.getElementById(`answer-${answerId}`);
+                    if (data.is_correct) {
+                        answerDiv.style.backgroundColor = 'lightgreen';
+                    } else {
+                        answerDiv.style.backgroundColor = ''; // Сброс фона
+                    }
+
+                    // Убираем галочки с остальных ответов
+                    document.querySelectorAll('.correct-answer-checkbox').forEach(otherCheckbox => {
+                        if (otherCheckbox !== checkbox) {
+                            otherCheckbox.checked = false;
+                            const otherAnswerId = otherCheckbox.getAttribute('data-answer-id');
+                            const otherAnswerDiv = document.getElementById(`answer-${otherAnswerId}`);
+                            otherAnswerDiv.style.backgroundColor = ''; // Сброс фона у остальных ответов
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}
