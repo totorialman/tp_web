@@ -135,22 +135,26 @@ def set_correct_answer(request, question_id, answer_id):
 
     return JsonResponse({'is_correct': answer.is_correct, 'answer_id': answer.id})
 def login_view(request):
+    popular_tags, best_users = get_popular_tags_and_best_users()
     if request.method == "POST":
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            next_url = request.GET.get('continue', '/')
-            return redirect(next_url)
+            return redirect('/')
     else:
         form = AuthenticationForm()
 
-    return render(request, 'login.html', {'form': form})
+    return render(request, 'login.html', {'form': form,'popular_tags': popular_tags,
+        'best_users': best_users,})
+
 from django.contrib import messages
 
 # Регистрация
 def signup_view(request):
+    popular_tags, best_users = get_popular_tags_and_best_users()
     if request.method == "POST":
+        
         form = CustomUserCreationForm(request.POST, request.FILES)
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -168,20 +172,20 @@ def signup_view(request):
             return redirect('/')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'signup.html', {'form': form})
+    return render(request, 'signup.html', {'form': form,'popular_tags': popular_tags,
+        'best_users': best_users,})
 
 @login_required
 def logout_view(request):
-    next_url = request.GET.get('next', '/')
     auth_logout(request)
-    return redirect(next_url)
+    return redirect('/')
 
 @login_required
 def edit_profile(request):
     profile = Profile.objects.filter(user=request.user).first()
     if not profile:
         profile = Profile.objects.create(user=request.user)
-
+    popular_tags, best_users = get_popular_tags_and_best_users()
     if request.method == "POST":
         user_form = ProfileEditForm(request.POST, request.FILES, instance=profile)
         
@@ -197,7 +201,8 @@ def edit_profile(request):
     else:
         user_form = ProfileEditForm(instance=profile)
 
-    return render(request, 'edit_profile.html', {'form': user_form, 'profile': profile, 'user': request.user})
+    return render(request, 'edit_profile.html', {'form': user_form, 'profile': profile, 'user': request.user,'popular_tags': popular_tags,
+        'best_users': best_users,})
 
 from django.utils import timezone
 from datetime import timedelta
@@ -341,13 +346,16 @@ def new_ask(request):
         
         if form.is_valid():
             question = form.save(commit=False)
-            question.author = request.user  
+            question.author = request.user
             question.save()  
 
             tags = form.cleaned_data['tags']
             for tag_name in tags.split(','):
-                tag, created = Tag.objects.get_or_create(name=tag_name.strip())
-                question.tags.add(tag)
+                tag_name = tag_name.strip()
+                if tag_name:
+                    tag, created = Tag.objects.get_or_create(name=tag_name)
+                    question.tags.add(tag)
+
             return redirect('question_detail', question_id=question.id)
 
     else:

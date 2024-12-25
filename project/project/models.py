@@ -36,7 +36,7 @@ class Question(models.Model):
     search_index = SearchVectorField(null=True)
 
     def save(self, *args, **kwargs):
-        self.search_index = SearchVector('title', 'content')
+        
         super().save(*args, **kwargs)
 
 
