@@ -2,27 +2,23 @@
 
 <div class="row align-items-center mb-2">
     <div class="col-md-3 d-flex justify-content-start">
-        <h1><a class="logo" href="/">AskPupkin</a></h1>
+        <h1><a class="logo" href="/">AskSirotkin</a></h1>
     </div>
 
     <div class="col-md-5">
-        <form class="d-flex">
-            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+        {% if request.path == '/' or request.path == '/questions/' or 1 %}
+        <form class="d-flex" method="GET" action="{% url 'search_questions' %}">
+            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" id="search-input" name="q" value="{{ query }}">
             <a href="/ask/">
                 <button class="btn btn-success ml-3" type="button">ASK!</button>
             </a>
         </form>
+        {% endif %}
     </div>
 
-    <div class="col-md-4 d-flex justify-content-end align-items-center">
+    <div class="col-md-4 d-flex justify-content-end align-items-center"">
         {% if user.is_authenticated %}
-            <!-- Если пользователь авторизован -->
-            {% if user.profile.avatar %}
-                <img src="{{ user.profile.avatar.url }}" alt="Avatar" width="100" class="mb-2">
-            {% else %}
-                <img src="{% static 'img/avatar.png' %}" alt="Avatar" width="100" class="mb-2">
-            {% endif %}
-            
+<img src="{{ user.profile.avatar.url }}" alt="Avatar" width="100" class="mb-2 mr-3">
             <div class="d-flex flex-column">
                 <span class="ml-4">{{ user.username }}</span>
                 <div class="d-flex align-items-center">
@@ -31,7 +27,6 @@
                 </div>
             </div>
         {% else %}
-            <!-- Если пользователь не авторизован -->
             <a href="{% url 'login' %}" class="btn btn-primary ml-3">Log In</a>
             <a href="{% url 'signup' %}" class="btn btn-success ml-3">Sign Up</a>
         {% endif %}

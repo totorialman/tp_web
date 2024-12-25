@@ -28,7 +28,7 @@ class ProfileEditForm(forms.ModelForm):
 class QuestionForm(forms.ModelForm):
     class Meta:
         model = Question
-        fields = ['title', 'content', 'tags']  # Предположим, что у вас есть поле tags
+        fields = ['title', 'content', 'tags'] 
 
     tags = forms.CharField(
         widget=forms.TextInput(attrs={'placeholder': 'Введите теги через запятую'}),

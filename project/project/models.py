@@ -19,7 +19,8 @@ class QuestionManager(models.Manager):
 
     def new(self):
         return self.order_by('-created_at')  
-
+from django.contrib.postgres.search import SearchVector
+from django.contrib.postgres.search import SearchVectorField
 # Модель для вопросов
 class Question(models.Model):
     title = models.CharField(max_length=255)
@@ -32,9 +33,13 @@ class Question(models.Model):
     answer_count = models.IntegerField(default=0)
 
     objects = QuestionManager()
+    search_index = SearchVectorField(null=True)
+
+    def save(self, *args, **kwargs):
+        self.search_index = SearchVector('title', 'content')
+        super().save(*args, **kwargs)
 
 
-# Модель для ответов
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='answers')

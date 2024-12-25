@@ -11,14 +11,46 @@ from django.contrib.auth.decorators import login_required
 from .forms import ProfileEditForm, QuestionForm, AnswerForm, CustomUserCreationForm
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.postgres.search import SearchQuery,SearchVector
+from .models import Question
+from django.db.models import Q
+
+from django.shortcuts import render
+from django.db.models import Q
+from .models import Question
+
+def search_questions(request):
+    query = request.GET.get('q', '')  
+    questions = Question.objects.none()  
+    popular_tags, best_users = get_popular_tags_and_best_users()
+    if query:
+        questions = Question.objects.filter(
+            Q(title__icontains=query) | Q(content__icontains=query)
+        )
+    
+    return render(request, 'questions.html', {'questions': questions, 'query': query,'popular_tags': popular_tags,
+        'best_users': best_users,})
+
+def paginate_objects(request, object_list, per_page=10):
+    paginator = Paginator(object_list, per_page)
+    page_number = request.GET.get('page', 1)
+
+    try:
+        objects = paginator.page(page_number)
+    except PageNotAnInteger:
+        objects = paginator.page(1)
+    except EmptyPage:
+        objects = paginator.page(paginator.num_pages)
+
+    return objects, paginator
+
 @login_required
 def toggle_vote(request, model_type, model_id):
-    """
-    Универсальная функция для лайков/дизлайков вопросов и ответов.
-    model_type: 'question' или 'answer' (тип модели).
-    model_id: id вопроса или ответа.
-    """
-    is_upvote = request.GET.get('is_upvote') == 'true'  # Получаем, лайк ли это или дизлайк
+    is_upvote = request.GET.get('is_upvote') == 'true'  
     user = request.user
 
     if model_type == 'question':
@@ -62,7 +94,6 @@ def toggle_vote(request, model_type, model_id):
                 model.save()
                 return JsonResponse({'vote_count': model.vote_count})
             else:
-                # Обновить оценку
                 model.vote_count -= vote.value
                 vote.value = 1 if is_upvote else -1
                 vote.save()
@@ -70,7 +101,6 @@ def toggle_vote(request, model_type, model_id):
                 model.save()
                 return JsonResponse({'vote_count': model.vote_count})
         else:
-            # Создать новую оценку
             value = 1 if is_upvote else -1
             AnswerLike.objects.create(user=user, answer=model, value=value)
             model.vote_count += value
@@ -88,10 +118,7 @@ from .models import Question, Answer
 
 @login_required
 def set_correct_answer(request, question_id, answer_id):
-    """
-    Функция для установки правильного ответа для вопроса.
-    Доступно только автору вопроса.
-    """
+
     question = get_object_or_404(Question, id=question_id)
     if question.author != request.user:
         return JsonResponse({'error': 'Only the question author can set the correct answer'}, status=403)
@@ -108,14 +135,11 @@ def set_correct_answer(request, question_id, answer_id):
 
     return JsonResponse({'is_correct': answer.is_correct, 'answer_id': answer.id})
 def login_view(request):
-    # Проверка, если запрос POST
     if request.method == "POST":
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
-            # Аутентификация пользователя
             user = form.get_user()
             auth_login(request, user)
-            # Редирект на главную страницу или на страницу, указанную в параметре continue
             next_url = request.GET.get('continue', '/')
             return redirect(next_url)
     else:
@@ -123,85 +147,117 @@ def login_view(request):
 
     return render(request, 'login.html', {'form': form})
 from django.contrib import messages
+
 # Регистрация
 def signup_view(request):
     if request.method == "POST":
         form = CustomUserCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            # Проверка на существование пользователя с таким email
             email = form.cleaned_data['email']
             if User.objects.filter(email=email).exists():
                 messages.error(request, "A user with this email already exists.")
                 return redirect('signup')
             
-            # Проверка на существование пользователя с таким логином
             username = form.cleaned_data['username']
             if User.objects.filter(username=username).exists():
                 messages.error(request, "A user with this username already exists.")
                 return redirect('signup')
             
-            user = form.save()  # Сохранение пользователя
-            auth_login(request, user)  # Логиним пользователя
+            user = form.save()  
+            auth_login(request, user)  
             return redirect('/')
     else:
         form = CustomUserCreationForm()
     return render(request, 'signup.html', {'form': form})
 
-# Выход
 @login_required
 def logout_view(request):
     next_url = request.GET.get('next', '/')
     auth_logout(request)
     return redirect(next_url)
 
-# Редактирование профиля
 @login_required
 def edit_profile(request):
-    # Получаем профиль пользователя (создаем его, если его нет)
     profile = Profile.objects.filter(user=request.user).first()
     if not profile:
         profile = Profile.objects.create(user=request.user)
 
     if request.method == "POST":
-        # Обновление электронной почты и биографии
         user_form = ProfileEditForm(request.POST, request.FILES, instance=profile)
         
         if user_form.is_valid():
-            # Обновление почты, если она была изменена
             new_email = request.POST.get('email')
             if new_email != request.user.email:
                 request.user.email = new_email
                 request.user.save()
 
-            user_form.save()  # Сохранить изменения в профиле
-            return redirect('edit_profile')  # Перенаправляем на страницу редактирования после сохранения
+            user_form.save()  
+            return redirect('edit_profile')  
 
     else:
         user_form = ProfileEditForm(instance=profile)
 
     return render(request, 'edit_profile.html', {'form': user_form, 'profile': profile, 'user': request.user})
 
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Count
+
+from itertools import chain
+
 def get_popular_tags_and_best_users():
+    now = timezone.now()
+    
+    three_months_ago = now - timedelta(days=90)  
+    one_week_ago = now - timedelta(weeks=1)      
+
     popular_tags = cache.get('popular_tags')
+
+    if not popular_tags:
+        popular_tags = (
+            Tag.objects
+            .filter(questions__created_at__gte=three_months_ago)  
+            .annotate(question_count=Count('questions'))
+            .order_by('-question_count')[:10]  
+        )
+        cache.set('popular_tags', popular_tags, timeout=3000)
+
     best_users = cache.get('best_users')
 
-    if not popular_tags or not best_users:
-        popular_tags = Tag.objects.annotate(question_count=Count('questions')).order_by('-question_count')[:10]
-        best_users = User.objects.annotate(question_count=Count('questions')).order_by('-question_count')[:5]
+    if not best_users:
+        best_users_questions = (
+            User.objects
+            .filter(questions__created_at__gte=one_week_ago)  
+            .annotate(question_count=Count('questions'))
+            .order_by('-question_count')[:5]  
+        )
 
-        cache.set('popular_tags', popular_tags, timeout=3000)
+        best_users_answers = (
+            User.objects
+            .filter(answers__created_at__gte=one_week_ago)  
+            .annotate(answer_count=Count('answers'))
+            .order_by('-answer_count')[:5]  
+        )
+
+        best_users = list(chain(best_users_questions, best_users_answers))
+        best_users = list({user.id: user for user in best_users}.values())[:10]
+
         cache.set('best_users', best_users, timeout=3000)
 
     return popular_tags, best_users
 
 
+
 @login_required
 def question_detail(request, question_id):
     question = get_object_or_404(Question.objects.annotate(num_answers=Count('answers')), id=question_id)
-    answers = Answer.objects.filter(question=question)
+    answers = Answer.objects.filter(question=question).order_by('-id')  
 
-    # Получаем первый профиль автора вопроса
-    profile = Profile.objects.filter(user=question.author).first()  # Получаем первый профиль автора
+    paginator = Paginator(answers, 10)  
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    profile = Profile.objects.filter(user=question.author).first()
 
     popular_tags, best_users = get_popular_tags_and_best_users()
 
@@ -209,21 +265,22 @@ def question_detail(request, question_id):
         form = AnswerForm(request.POST)
         if form.is_valid():
             answer = form.save(commit=False)
-            answer.author = request.user  # Присваиваем автору текущего пользователя
-            answer.question = question  # Привязываем ответ к текущему вопросу
+            answer.author = request.user
+            answer.question = question
             answer.save()
-            return redirect(request.path)  # Перенаправляем на страницу вопроса с привязкой к добавленному ответу
+            return redirect(request.path)
 
     else:
         form = AnswerForm()
 
     context = {
         'question': question,
-        'answers': answers,
+        'answers': page_obj,  
         'form': form,
         'popular_tags': popular_tags,
         'best_users': best_users,
-        'profile': profile,  # Передаем профиль в контекст
+        'profile': profile,
+        'paginator': paginator,  
     }
 
     return render(request, 'question.html', context)
@@ -231,7 +288,7 @@ def question_detail(request, question_id):
 
 def question_list_view(request):
     questions = Question.objects.annotate(num_answers=Count('answers')).order_by('-id')
-    paginator = Paginator(questions, 20)
+    paginator = Paginator(questions, 10)
 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -242,6 +299,7 @@ def question_list_view(request):
         'questions': page_obj,
         'popular_tags': popular_tags,
         'best_users': best_users,
+        'paginator': paginator,
     }
     
     return render(request, 'questions.html', context)
@@ -259,6 +317,7 @@ def top_liked_questions(request):
         'questions': page_obj,
         'popular_tags': popular_tags,
         'best_users': best_users,
+        
     }
     
     return render(request, 'questions.html', context)
@@ -275,25 +334,20 @@ def base(request):
 
 @login_required
 def new_ask(request):
-    # Получаем популярные теги и пользователей
     popular_tags, best_users = get_popular_tags_and_best_users()
 
     if request.method == 'POST':
         form = QuestionForm(request.POST)
         
         if form.is_valid():
-            # Создаем новый вопрос, но не сохраняем его сразу
             question = form.save(commit=False)
-            question.author = request.user  # Присваиваем автору текущего пользователя
-            question.save()  # Сохраняем вопрос
+            question.author = request.user  
+            question.save()  
 
-            # Добавляем теги для вопроса
             tags = form.cleaned_data['tags']
             for tag_name in tags.split(','):
                 tag, created = Tag.objects.get_or_create(name=tag_name.strip())
                 question.tags.add(tag)
-
-            # Редиректим на страницу созданного вопроса
             return redirect('question_detail', question_id=question.id)
 
     else:
